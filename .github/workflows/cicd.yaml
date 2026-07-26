@@ -1,18 +1,5 @@
 name: DevSecOps Pipeline - Books-Pens (Production)
 
-# ═══════════════════════════════════════════════════════════════════
-# PRODUCTION LEVEL PIPELINE
-# - ALL secrets from AWS Secrets Manager (ZERO hardcoding)
-# - OIDC authentication (no static keys)
-# - SonarQube running on bastion server
-# - 10 stages, fully automated
-#
-# TRIGGERS:
-#   - PR to master    → Runs scan stages (1-6) only, no deploy
-#   - Manual dispatch → Runs full pipeline including deploy
-#   - Push to master  → Does NOT trigger (you deploy manually)
-# ═══════════════════════════════════════════════════════════════════
-
 on:
   push:
     branches: [master]
@@ -37,12 +24,10 @@ on:
           - deploy
 
 env:
-  
   ECR_REPOSITORY_NAME: books-pens
   IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/books-pens
   EKS_CLUSTER_NAME: books-cluster
   IMAGE_TAG: v${{ github.run_number }}
-
 
 permissions:
   id-token: write
@@ -51,9 +36,9 @@ permissions:
   pull-requests: write
 
 jobs:
-  # ═══════════════════════════════════════════════════════════════════
-  # STAGE 1: SECRET SCANNING 
-  # ═══════════════════════════════════════════════════════════════════
+  # ═══════════════════════════════════════════════════════
+  # STAGE 1: SECRET SCANNING
+  # ═══════════════════════════════════════════════════════
   secret-scan:
     name: "Stage 1: Secret Scanning (Gitleaks)"
     runs-on: ubuntu-latest
@@ -69,12 +54,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-# ═══════════════════════════════════════════════════════════════════
-# STAGE 3: DEPENDENCY SCAN — SCA
-# ═══════════════════════════════════════════════════════════════════
+  # ═══════════════════════════════════════════════════════
+  # STAGE 3: DEPENDENCY SCAN — SCA
+  # ═══════════════════════════════════════════════════════
   dependency-scan:
     name: "Stage 3: Dependency Scan (Trivy FS)"
     runs-on: ubuntu-latest
+    needs: [secret-scan]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -88,13 +74,13 @@ jobs:
           exit-code: "1"
           severity: "CRITICAL,HIGH"
 
-# ═══════════════════════════════════════════════════════════════════
-# STAGE 4: DOCKER BUILD & PUSH IMAGE
-# ═══════════════════════════════════════════════════════════════════
-
+  # ═══════════════════════════════════════════════════════
+  # STAGE 4: DOCKER BUILD & PUSH IMAGE
+  # ═══════════════════════════════════════════════════════
   build-and-push:
-    name: Build & Push Docker Image
+    name: "Stage 4: Build & Push Docker Image"
     runs-on: ubuntu-latest
+    needs: [dependency-scan]
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -130,9 +116,9 @@ jobs:
           name: docker-images
           path: books-pens.tar
 
-  # ═══════════════════════════════════════════════════════════════════
-  # STAGE 5: CONTAINER IMAGE SCAN 
-  # ═══════════════════════════════════════════════════════════════════
+  # ═══════════════════════════════════════════════════════
+  # STAGE 5: CONTAINER IMAGE SCAN
+  # ═══════════════════════════════════════════════════════
   image-scan:
     name: "Stage 5: Container Image Scan (Trivy)"
     runs-on: ubuntu-latest
@@ -147,8 +133,7 @@ jobs:
           name: docker-images
 
       - name: Load images
-        run: |
-          docker load -i books-pens.tar
+        run: docker load -i books-pens.tar
 
       - name: Scan Books-pens Image
         uses: aquasecurity/trivy-action@master
