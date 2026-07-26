@@ -178,28 +178,33 @@ jobs:
           sarif_file: "trivy-image.sarif"
           category: "trivy-image"
 
+
   # ═══════════════════════════════════════════════════════
   # STAGE 6: PUSH TO DOCKER HUB
   # ═══════════════════════════════════════════════════════
-  
-  push-to-dockerhub:
-    name: "Stage 6: Push to Docker Hub"
-    runs-on: ubuntu-latest
-    needs: [image-scan]
-    if: >
-      github.event_name == 'workflow_dispatch' &&
-      github.event.inputs.action == 'deploy'
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
 
-      - name: Download image artifact
+  push-to-dockerhub:
+    name: "Stage 6: Push Docker Images"
+    runs-on: ubuntu-latest
+    needs: image-scan
+
+    if: |
+      (github.event_name == 'push' &&
+       github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' &&
+       github.event.inputs.action == 'deploy')
+
+    steps:
+      - name: Download Docker Image Artifact
         uses: actions/download-artifact@v4
         with:
           name: docker-images
 
-      - name: Load Docker image
+      - name: Load Docker Image
         run: docker load -i books-pens.tar
+
+      - name: Verify Loaded Images
+        run: docker images
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -207,9 +212,10 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-      - name: Push image to Docker Hub
+      - name: Push Docker Images
         run: |
-          docker push ${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          docker push ${{ env.IMAGE_NAME }}:latest
           docker tag ${{ env.IMAGE_NAME }}:${{ github.sha }} ${{ env.IMAGE_NAME }}:latest
           docker push ${{ env.IMAGE_NAME }}:latest
 
