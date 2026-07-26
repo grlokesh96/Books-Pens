@@ -2,14 +2,14 @@ name: DevSecOps Pipeline - Books-Pens (Production)
 
 on:
   push:
-    branches: [master, main]
-      branches: [main]
+    branches: [main]
+    paths-ignore:
       - "terraform/**"
       - "*.md"
       - ".github/dependabot.yml"
   pull_request:
-    branches: [master]
-      branches: [main]
+    branches: [main]
+    paths-ignore:
       - "terraform/**"
       - "*.md"
   workflow_dispatch:
