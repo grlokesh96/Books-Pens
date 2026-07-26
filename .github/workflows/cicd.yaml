@@ -56,12 +56,36 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # ═══════════════════════════════════════════════════════
+  # STAGE 2: LINTING
+  # ═══════════════════════════════════════════════════════
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    needs: [secret-scan]
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint
+
+  # ═══════════════════════════════════════════════════════
   # STAGE 3: DEPENDENCY SCAN — SCA
   # ═══════════════════════════════════════════════════════
   dependency-scan:
     name: "Stage 3: Dependency Scan (Trivy FS)"
     runs-on: ubuntu-latest
-    needs: [secret-scan]
+    needs: [lint]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
