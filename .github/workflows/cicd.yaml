@@ -22,6 +22,7 @@ on:
         options:
           - scan-only
           - deploy
+          - test
 
 env:
   ECR_REPOSITORY_NAME: books-pens
