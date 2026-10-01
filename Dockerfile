@@ -1,29 +1,42 @@
-# -----------------------------
-# Builder stage
-# -----------------------------
+# ============================================================
+# Stage 1: Dependencies
+# ============================================================
+FROM node:24-alpine AS deps
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+
+RUN npm ci --prefer-offline --no-audit
+
+
+# ============================================================
+# Stage 2: Build
+# ============================================================
 FROM node:24-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files and install all dependencies
+COPY --from=deps /app/node_modules ./node_modules
 COPY package.json package-lock.json ./
-RUN npm ci
 
-# Copy application source and build
 COPY . .
+
 RUN npm run build
 
-# -----------------------------
-# Runtime stage
-# -----------------------------
+
+# ============================================================
+# Stage 3: Production
+# ============================================================
 FROM node:24-alpine AS runner
 
 WORKDIR /app
 
-# Copy the production build and installed node_modules from the builder stage
+ENV NODE_ENV=production
+
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
-COPY package.json ./
+COPY --from=builder /app/package.json ./package.json
 
 EXPOSE 3000
 
