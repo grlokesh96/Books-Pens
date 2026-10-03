@@ -79,12 +79,40 @@ jobs:
         run: npm run lint
 
   # ═══════════════════════════════════════════════════════
-  # STAGE 3: DEPENDENCY SCAN — SCA
+  # STAGE 3: SAST — SEMGREP
   # ═══════════════════════════════════════════════════════
-  dependency-scan:
-    name: "Stage 3: Dependency Scan (Trivy FS)"
+  semgrep:
+    name: "Stage 3: SAST (Semgrep)"
     runs-on: ubuntu-latest
     needs: [lint]
+    if: github.actor != 'dependabot[bot]'
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: auto
+          generateSarif: "true"
+
+      - name: Upload Semgrep SARIF to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
+
+  # ═══════════════════════════════════════════════════════
+  # STAGE 4: DEPENDENCY SCAN — SCA
+  # ═══════════════════════════════════════════════════════
+  dependency-scan:
+    name: "Stage 4: Dependency Scan (Trivy FS)"
+    runs-on: ubuntu-latest
+    needs: [semgrep]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -99,10 +127,10 @@ jobs:
           severity: "CRITICAL,HIGH"
 
   # ═══════════════════════════════════════════════════════
-  # STAGE 4: BUILD DOCKER IMAGE
+  # STAGE 5: BUILD DOCKER IMAGE
   # ═══════════════════════════════════════════════════════
   build-image:
-    name: "Stage 4: Build Docker Image"
+    name: "Stage 5: Build Docker Image"
     runs-on: ubuntu-latest
     needs: [dependency-scan]
     steps:
@@ -143,10 +171,10 @@ jobs:
           retention-days: 1
 
   # ═══════════════════════════════════════════════════════
-  # STAGE 5: CONTAINER IMAGE SCAN
+  # STAGE 6: CONTAINER IMAGE SCAN
   # ═══════════════════════════════════════════════════════
   image-scan:
-    name: "Stage 5: Container Image Scan (Trivy)"
+    name: "Stage 6: Container Image Scan (Trivy)"
     runs-on: ubuntu-latest
     needs: [build-image]
     steps:
@@ -180,10 +208,10 @@ jobs:
           category: "trivy-image"
 
   # ═══════════════════════════════════════════════════════
-  # STAGE 6: PUSH TO DOCKER HUB
+  # STAGE 7: PUSH TO DOCKER HUB
   # ═══════════════════════════════════════════════════════
   push-to-dockerhub:
-    name: "Stage 6: Push Docker Images"
+    name: "Stage 7: Push Docker Images"
     runs-on: ubuntu-latest
     needs: [image-scan]
     if: >
