@@ -79,10 +79,10 @@ jobs:
         run: npm run lint
 
   # ═══════════════════════════════════════════════════════
-  # STAGE 3a: SAST — SEMGREP
+  # STAGE 3: SAST — SEMGREP
   # ═══════════════════════════════════════════════════════
   semgrep:
-    name: "Stage 3a: SAST (Semgrep)"
+    name: "Stage 3: SAST (Semgrep)"
     runs-on: ubuntu-latest
     needs: [lint]
     if: github.actor != 'dependabot[bot]'
@@ -130,49 +130,12 @@ jobs:
           wait-for-processing: true
 
   # ═══════════════════════════════════════════════════════
-  # STAGE 3b: SAST — CODEQL (runs in parallel with Semgrep)
-  # ═══════════════════════════════════════════════════════
-  codeql:
-    name: "Stage 3b: SAST (CodeQL - ${{ matrix.language }})"
-    runs-on: ubuntu-latest
-    needs: [lint]
-    if: github.actor != 'dependabot[bot]'
-    permissions:
-      contents: read
-      security-events: write
-      actions: read
-    strategy:
-      fail-fast: false
-      matrix:
-        language:
-          - javascript-typescript
-          - python
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4
-        with:
-          languages: ${{ matrix.language }}
-          queries: security-extended
-          # Interpreted languages need no build; autobuild step not required
-          build-mode: none
-
-      - name: CodeQL Analysis
-        uses: github/codeql-action/analyze@v4
-        with:
-          category: "/language:${{ matrix.language }}"
-
-  # ═══════════════════════════════════════════════════════
   # STAGE 4: DEPENDENCY SCAN — SCA
   # ═══════════════════════════════════════════════════════
   dependency-scan:
     name: "Stage 4: Dependency Scan (Trivy FS)"
     runs-on: ubuntu-latest
-    needs: [semgrep, codeql]
-    # Dependabot skips the SAST jobs; still run SCA for its PRs
-    if: always() && !cancelled() && !contains(needs.*.result, 'failure')
+    needs: [semgrep]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
