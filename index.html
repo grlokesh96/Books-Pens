@@ -2,12 +2,43 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Responsive design -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    />
+
+    <!-- Basic SEO -->
     <title>My Google AI Studio App</title>
+    <meta
+      name="description"
+      content="AI-powered application built with Google AI Studio."
+    />
+
+    <!-- Theme / Browser -->
+    <meta name="theme-color" content="#ffffff" />
+
+    <!-- Mobile / PWA-friendly -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="default"
+    />
+
+    <!-- Prevent favicon 404 if one isn't configured yet -->
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤖</text></svg>"
+    />
   </head>
+
   <body>
+    <!-- React application root -->
     <div id="root"></div>
+
+    <!-- Main application -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-
