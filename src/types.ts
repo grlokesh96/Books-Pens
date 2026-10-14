@@ -6,6 +6,7 @@ export interface Review {
   rating: number;
   comment: string;
   date: string;
+  time: string;
 }
 
 export interface Book {
