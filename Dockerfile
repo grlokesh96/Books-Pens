@@ -1,7 +1,7 @@
 # ============================================================
 # Stage 1: Dependencies
 # ============================================================
-FROM node:24-alpine3.24 AS deps
+FROM node:25-alpine3.24 AS deps
 
 WORKDIR /app
 
@@ -13,7 +13,7 @@ RUN npm ci --prefer-offline --no-audit
 # ============================================================
 # Stage 2: Build
 # ============================================================
-FROM node:24-alpine3.24 AS builder
+FROM node:25-alpine3.24 AS builder
 
 WORKDIR /app
 
@@ -28,7 +28,7 @@ RUN npm run build
 # ============================================================
 # Stage 3: Production
 # ============================================================
-FROM node:24-alpine3.24 AS runner
+FROM node:25-alpine3.24 AS runner
 
 WORKDIR /app
 
