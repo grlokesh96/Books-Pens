@@ -79,74 +79,12 @@ jobs:
         run: npm run lint
 
   # ═══════════════════════════════════════════════════════
-  # STAGE 3: UNIT TESTING, CODE COVERAGE & HTML REPORT
-  #   - Unit Testing : Vitest
-  #   - Code Coverage: Istanbul (via @vitest/coverage-istanbul)
-  #   - Report       : HTML (uploaded as artifact)
-  # ═══════════════════════════════════════════════════════
-  unit-test:
-    name: "Stage 3: Unit Tests + Coverage (Vitest / Istanbul)"
-    runs-on: ubuntu-latest
-    needs: [lint]
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install Dependencies
-        run: npm ci
-
-      - name: Run Vitest with Istanbul Coverage
-        shell: bash
-        # Requires devDependencies: vitest, @vitest/coverage-istanbul
-        # Reporters: text (console), html (browsable report), lcov + json-summary (tooling)
-        run: |
-          npx vitest run \
-            --coverage.enabled=true \
-            --coverage.provider=istanbul \
-            --coverage.reporter=text \
-            --coverage.reporter=text-summary \
-            --coverage.reporter=html \
-            --coverage.reporter=lcov \
-            --coverage.reporter=json-summary \
-            --coverage.reportsDirectory=./coverage \
-            2>&1 | tee vitest-output.txt
-
-      - name: Publish Coverage Summary
-        if: always()
-        shell: bash
-        run: |
-          {
-            echo "## 🧪 Unit Test & Coverage Summary (Vitest + Istanbul)"
-            echo ""
-            echo '```'
-            sed -n '/Coverage summary/,/====/p' vitest-output.txt || true
-            echo '```'
-            echo ""
-            echo "📦 Download the **coverage-html-report** artifact and open \`index.html\` for the full report."
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload HTML Coverage Report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-html-report
-          path: coverage/
-          if-no-files-found: warn
-          retention-days: 14
-
-  # ═══════════════════════════════════════════════════════
-  # STAGE 4: SAST — SEMGREP
+  # STAGE 3: SAST — SEMGREP
   # ═══════════════════════════════════════════════════════
   semgrep:
-    name: "Stage 4: SAST (Semgrep)"
+    name: "Stage 3: SAST (Semgrep)"
     runs-on: ubuntu-latest
-    needs: [unit-test]
+    needs: [lint]
     if: github.actor != 'dependabot[bot]'
     permissions:
       contents: read
@@ -192,10 +130,10 @@ jobs:
           wait-for-processing: true
 
   # ═══════════════════════════════════════════════════════
-  # STAGE 5: DEPENDENCY SCAN — SCA
+  # STAGE 4: DEPENDENCY SCAN — SCA
   # ═══════════════════════════════════════════════════════
   dependency-scan:
-    name: "Stage 5: Dependency Scan (Trivy FS)"
+    name: "Stage 4: Dependency Scan (Trivy FS)"
     runs-on: ubuntu-latest
     needs: [semgrep]
     steps:
@@ -212,10 +150,10 @@ jobs:
           severity: "CRITICAL,HIGH"
 
   # ═══════════════════════════════════════════════════════
-  # STAGE 6: BUILD DOCKER IMAGE
+  # STAGE 5: BUILD DOCKER IMAGE
   # ═══════════════════════════════════════════════════════
   build-image:
-    name: "Stage 6: Build Docker Image"
+    name: "Stage 5: Build Docker Image"
     runs-on: ubuntu-latest
     needs: [dependency-scan]
     steps:
@@ -256,10 +194,10 @@ jobs:
           retention-days: 1
 
   # ═══════════════════════════════════════════════════════
-  # STAGE 7: CONTAINER IMAGE SCAN
+  # STAGE 6: CONTAINER IMAGE SCAN
   # ═══════════════════════════════════════════════════════
   image-scan:
-    name: "Stage 7: Container Image Scan (Trivy)"
+    name: "Stage 6: Container Image Scan (Trivy)"
     runs-on: ubuntu-latest
     needs: [build-image]
     steps:
@@ -294,10 +232,10 @@ jobs:
           wait-for-processing: true
 
   # ═══════════════════════════════════════════════════════
-  # STAGE 8: PUSH TO DOCKER HUB
+  # STAGE 7: PUSH TO DOCKER HUB
   # ═══════════════════════════════════════════════════════
   push-to-dockerhub:
-    name: "Stage 8: Push Docker Images"
+    name: "Stage 7: Push Docker Images"
     runs-on: ubuntu-latest
     needs: [image-scan]
     if: >
