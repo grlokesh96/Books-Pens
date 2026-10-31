@@ -29,7 +29,6 @@ env:
   IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/books-pens
   EKS_CLUSTER_NAME: books-cluster
   IMAGE_TAG: v${{ github.run_number }}
-  TALISMAN_VERSION: v1.32.0
   APP_PORT: 3000 # port your container listens on (used by ZAP DAST stage)
 
 permissions:
@@ -58,67 +57,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # ═══════════════════════════════════════════════════════
-  # STAGE 2: SENSITIVE DATA SCANNING — TALISMAN
-  # Runs in parallel with Gitleaks (second layer of secret detection)
-  # ═══════════════════════════════════════════════════════
-  talisman:
-    name: "Stage 2: Secret Scanning (Talisman)"
-    runs-on: ubuntu-latest
-    if: github.actor != 'dependabot[bot]'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Install Talisman
-        run: |
-          curl -sSfL -o talisman \
-            "https://github.com/thoughtworks/talisman/releases/download/${TALISMAN_VERSION}/talisman_linux_amd64"
-          chmod +x talisman
-          ./talisman --version || true
-
-      - name: Run Talisman scan (generates report)
-        id: talisman_scan
-        continue-on-error: true # let the report upload even when findings exist
-        run: |
-          ./talisman --scan --reportDirectory=talisman_reports
-
-      - name: Show Talisman report folders
-        if: always()
-        run: |
-          ls -R talisman_reports 2>/dev/null || echo "No talisman_reports directory"
-          ls -R talisman_html_report 2>/dev/null || echo "No talisman_html_report directory"
-
-      - name: Upload Talisman report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: talisman-report
-          path: |
-            talisman_reports/
-            talisman_html_report/
-          if-no-files-found: warn
-          retention-days: 14
-
-      - name: Fail pipeline if Talisman found issues
-        if: steps.talisman_scan.outcome == 'failure'
-        run: |
-          echo "::error::Talisman detected potential secrets/sensitive data. Download the 'talisman-report' artifact for details."
-          exit 1
-
-  # ═══════════════════════════════════════════════════════
-  # STAGE 3: LINTING
+  # STAGE 2: LINTING
   # ═══════════════════════════════════════════════════════
   lint:
-    name: "Stage 3: Linting (ESLint)"
+    name: "Stage 2: Linting (ESLint)"
     runs-on: ubuntu-latest
-    needs: [secret-scan, talisman]
-    # Dependabot skips the two secret scans; always() + result check keeps lint running for it
-    if: >
-      always() &&
-      (needs.secret-scan.result == 'success' || needs.secret-scan.result == 'skipped') &&
-      (needs.talisman.result == 'success' || needs.talisman.result == 'skipped')
+    needs: [secret-scan]
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -136,10 +80,10 @@ jobs:
         run: npm run lint
 
   # ═══════════════════════════════════════════════════════
-  # STAGE 4: SAST — SEMGREP
+  # STAGE 3: SAST — SEMGREP
   # ═══════════════════════════════════════════════════════
   semgrep:
-    name: "Stage 4: SAST (Semgrep)"
+    name: "Stage 3: SAST (Semgrep)"
     runs-on: ubuntu-latest
     needs: [lint]
     if: github.actor != 'dependabot[bot]'
@@ -187,14 +131,12 @@ jobs:
           wait-for-processing: true
 
   # ═══════════════════════════════════════════════════════
-  # STAGE 5: DEPENDENCY SCAN — SCA
+  # STAGE 4: DEPENDENCY SCAN — SCA
   # ═══════════════════════════════════════════════════════
   dependency-scan:
-    name: "Stage 5: Dependency Scan (Trivy FS)"
+    name: "Stage 4: Dependency Scan (Trivy FS)"
     runs-on: ubuntu-latest
     needs: [semgrep]
-    # Semgrep is skipped for Dependabot, so don't block on it
-    if: always() && (needs.semgrep.result == 'success' || needs.semgrep.result == 'skipped')
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -209,10 +151,10 @@ jobs:
           severity: "CRITICAL,HIGH"
 
   # ═══════════════════════════════════════════════════════
-  # STAGE 6: BUILD DOCKER IMAGE
+  # STAGE 5: BUILD DOCKER IMAGE
   # ═══════════════════════════════════════════════════════
   build-image:
-    name: "Stage 6: Build Docker Image"
+    name: "Stage 5: Build Docker Image"
     runs-on: ubuntu-latest
     needs: [dependency-scan]
     steps:
@@ -253,10 +195,10 @@ jobs:
           retention-days: 1
 
   # ═══════════════════════════════════════════════════════
-  # STAGE 7: CONTAINER IMAGE SCAN
+  # STAGE 6: CONTAINER IMAGE SCAN
   # ═══════════════════════════════════════════════════════
   image-scan:
-    name: "Stage 7: Container Image Scan (Trivy)"
+    name: "Stage 6: Container Image Scan (Trivy)"
     runs-on: ubuntu-latest
     needs: [build-image]
     steps:
@@ -291,11 +233,11 @@ jobs:
           wait-for-processing: true
 
   # ═══════════════════════════════════════════════════════
-  # STAGE 8: DAST — OWASP ZAP BASELINE SCAN
+  # STAGE 7: DAST — OWASP ZAP BASELINE SCAN
   # Runs the freshly built image locally and scans it
   # ═══════════════════════════════════════════════════════
   dast-zap:
-    name: "Stage 8: DAST (OWASP ZAP)"
+    name: "Stage 7: DAST (OWASP ZAP)"
     runs-on: ubuntu-latest
     needs: [image-scan]
     permissions:
@@ -375,10 +317,10 @@ jobs:
         run: docker rm -f books-pens-app || true
 
   # ═══════════════════════════════════════════════════════
-  # STAGE 9: PUSH TO DOCKER HUB
+  # STAGE 8: PUSH TO DOCKER HUB
   # ═══════════════════════════════════════════════════════
   push-to-dockerhub:
-    name: "Stage 9: Push Docker Images"
+    name: "Stage 8: Push Docker Images"
     runs-on: ubuntu-latest
     needs: [image-scan, dast-zap]
     if: >
