@@ -54,7 +54,7 @@ const INITIAL_ORDERS: Order[] = [
       addressLine: '456 Beacon Hill',
       city: 'Boston',
       state: 'MA',
-      zipCode: '02108',
+      zipCode: '02109',
       country: 'United States'
     },
     paymentMethod: 'Credit Card',
