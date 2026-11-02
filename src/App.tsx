@@ -22,7 +22,7 @@ const INITIAL_ORDERS: Order[] = [
         productId: 'b1',
         name: 'The Echo of Silence',
         type: 'book',
-        price: 17.09,
+        price: 16.09,
         quantity: 1,
         image: 'https://images.unsplash.com/photo-1544947950-fa07a98d237f?auto=format&fit=crop&q=80&w=600'
       },
