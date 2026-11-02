@@ -31,7 +31,7 @@ const INITIAL_ORDERS: Order[] = [
         productId: 'p2',
         name: 'Gel-Glide Pro',
         type: 'pen',
-        price: 4.49,
+        price: 2.49,
         quantity: 3,
         image: 'https://images.unsplash.com/photo-1585336139057-3c509c12002e?auto=format&fit=crop&q=80&w=600'
       }
