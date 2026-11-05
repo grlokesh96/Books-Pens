@@ -317,12 +317,43 @@ jobs:
         run: docker rm -f books-pens-app || true
 
   # ═══════════════════════════════════════════════════════
-  # STAGE 8: PUSH TO DOCKER HUB
+  # STAGE 8: SBOM GENERATION — SYFT (CycloneDX)
+  # ═══════════════════════════════════════════════════════
+  sbom-generation:
+    name: "Stage 8: Generate SBOM"
+    runs-on: ubuntu-latest
+    needs: [build-image]
+
+    permissions:
+      contents: read
+      actions: read
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Syft
+        uses: anchore/sbom-action/download-syft@v0.20.6
+
+      - name: Generate SBOM
+        run: |
+          syft dir:. \
+            -o cyclonedx-json=sbom.json
+
+      - name: Upload SBOM Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: application-sbom
+          path: sbom.json
+          retention-days: 30
+
+  # ═══════════════════════════════════════════════════════
+  # STAGE 9: PUSH TO DOCKER HUB
   # ═══════════════════════════════════════════════════════
   push-to-dockerhub:
-    name: "Stage 8: Push Docker Images"
+    name: "Stage 9: Push Docker Images"
     runs-on: ubuntu-latest
-    needs: [image-scan, dast-zap]
+    needs: [image-scan, dast-zap, sbom-generation]
     if: >
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'deploy')
@@ -350,11 +381,11 @@ jobs:
           docker push ${{ env.IMAGE_NAME }}:latest
 
   # ═══════════════════════════════════════════════════════
-  # STAGE 9: SLACK NOTIFICATION
+  # STAGE 10: SLACK NOTIFICATION
   # Always runs and reports the result of every stage above
   # ═══════════════════════════════════════════════════════
   slack-notification:
-    name: "Stage 9: Slack Notification"
+    name: "Stage 10: Slack Notification"
     runs-on: ubuntu-latest
     needs:
       - secret-scan
@@ -364,6 +395,7 @@ jobs:
       - build-image
       - image-scan
       - dast-zap
+      - sbom-generation
       - push-to-dockerhub
     # Dependabot runs don't get repo secrets, so skip them
     if: always() && github.actor != 'dependabot[bot]'
@@ -379,6 +411,7 @@ jobs:
           BUILD_STATUS: ${{ needs.build-image.result }}
           IMAGE_SCAN_STATUS: ${{ needs.image-scan.result }}
           DAST_STATUS: ${{ needs.dast-zap.result }}
+          SBOM_STATUS: ${{ needs.sbom-generation.result }}
           PUSH_STATUS: ${{ needs.push-to-dockerhub.result }}
           REPO: ${{ github.repository }}
           BRANCH: ${{ github.ref_name }}
@@ -397,7 +430,8 @@ jobs:
                 "$SCA_STATUS" == "success" &&
                 "$BUILD_STATUS" == "success" &&
                 "$IMAGE_SCAN_STATUS" == "success" &&
-                "$DAST_STATUS" == "success" ]] &&
+                "$DAST_STATUS" == "success" &&
+                "$SBOM_STATUS" == "success" ]] &&
              ok_or_skipped "$SECRET_STATUS" &&
              ok_or_skipped "$SAST_STATUS" &&
              ok_or_skipped "$PUSH_STATUS"; then
@@ -432,6 +466,7 @@ jobs:
             --arg build "$BUILD_STATUS" \
             --arg imgscan "$IMAGE_SCAN_STATUS" \
             --arg dast "$DAST_STATUS" \
+            --arg sbom "$SBOM_STATUS" \
             --arg push "$PUSH_STATUS" \
             '{
               attachments: [{
@@ -478,6 +513,7 @@ jobs:
                         ":whale: Docker Build: `" + $build + "`\n" +
                         ":shield: Image Scan (Trivy): `" + $imgscan + "`\n" +
                         ":spider_web: DAST (OWASP ZAP): `" + $dast + "`\n" +
+                        ":page_facing_up: SBOM (Syft): `" + $sbom + "`\n" +
                         ":arrow_up: Docker Hub Push: `" + $push + "`"
                       )
                     }
