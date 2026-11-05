@@ -362,11 +362,13 @@ jobs:
           name: application-sbom
 
       - name: Install Grype
+        id: grype
         uses: anchore/scan-action/download-grype@v6
 
       - name: Scan SBOM
+        # download-grype doesn't add grype to PATH; use the path it outputs
         run: |
-          grype sbom:sbom.json \
+          ${{ steps.grype.outputs.cmd }} sbom:sbom.json \
             --fail-on high \
             -o table
 
