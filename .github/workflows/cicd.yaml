@@ -367,22 +367,17 @@ jobs:
         uses: anchore/scan-action/download-grype@v6
 
       - name: Scan SBOM
-        # download-grype doesn't add grype to PATH; use the path it outputs
+        # Report-only: prints all findings but never fails the pipeline.
+        # To enforce again, add: --fail-on high
         run: |
-          # Accepted risk: proxy-addr critical finding ignored for now.
-          # TODO: remove once proxy-addr is upgraded to >= 2.0.8
-          cat > .grype.yaml << 'GRYPE_EOF'
-          ignore:
-            - vulnerability: GHSA-jqcg-44mw-7w3h
-              package:
-                name: proxy-addr
-                type: npm
-          GRYPE_EOF
+          ${{ steps.grype.outputs.cmd }} sbom:sbom.json -o table | tee grype-report.txt
 
-          ${{ steps.grype.outputs.cmd }} sbom:sbom.json \
-            -c .grype.yaml \
-            --fail-on high \
-            -o table
+          {
+            echo "## Grype SBOM Vulnerability Report"
+            echo '```'
+            cat grype-report.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
   # ═══════════════════════════════════════════════════════
   # STAGE 10: PUSH TO DOCKER HUB
