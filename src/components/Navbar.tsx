@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { ShoppingCart, Heart, User, LogOut, Settings, Layers, Notebook, Compass, Info, Mail } from 'lucide-react';
 import { User as UserType, CartItem, WishlistItem } from '../types';
+import { Theme } from '../hooks/useTheme';
+import ThemeToggle from './ThemeToggle';
 
 interface NavbarProps {
   activeView: string;
@@ -11,6 +13,8 @@ interface NavbarProps {
   wishlist: WishlistItem[];
   onOpenCart: () => void;
   onLogout: () => void;
+  theme: Theme;
+  onToggleTheme: () => void;
 }
 
 export default function Navbar({
@@ -22,6 +26,8 @@ export default function Navbar({
   wishlist,
   onOpenCart,
   onLogout,
+  theme,
+  onToggleTheme,
 }: NavbarProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -112,6 +118,9 @@ export default function Navbar({
 
           {/* Icons Bar */}
           <div className="flex items-center space-x-4">
+            {/* Theme Toggle */}
+            <ThemeToggle theme={theme} onToggle={onToggleTheme} />
+
             {/* Wishlist Icon */}
             <button
               id="nav-wishlist-btn"

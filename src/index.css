@@ -1,91 +1,75 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300..800;1,300..800&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Space+Grotesk:wght@300..700&display=swap');
 @import "tailwindcss";
 
+/* Drive Tailwind's `dark:` utilities off the .dark class on <html>
+   so they follow the same toggle as the hand-written overrides below. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Space Grotesk", "Inter", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
-/* Custom visual styling */
-body {
-  font-family: var(--font-sans);
-  background-color: #09090b !important; /* zinc-950 */
-  color: #f4f4f5 !important; /* zinc-100 */
+/* ==========================================================
+   Base layer — element defaults.
+   Kept in @layer base so Tailwind utilities (and the per-field
+   bg-* classes in the components) still win over these.
+   ========================================================== */
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    background-color: #fafafa;
+    color: #111827;
+  }
+
+  input,
+  select,
+  textarea {
+    background-color: #ffffff;
+    border-color: #e5e7eb;
+    color: #111827;
+  }
+
+  input:focus,
+  select:focus,
+  textarea:focus {
+    border-color: #f59e0b;
+    outline: none;
+  }
+
+  /* Custom scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #d4d4d8;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #a1a1aa;
+  }
 }
 
-/* Custom scrollbars */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #09090b;
-}
-::-webkit-scrollbar-thumb {
-  background: #27272a;
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
-}
+/* ==========================================================
+   Shared refinements — apply to both themes.
+   Deliberately unlayered so they beat Tailwind's utilities.
+   ========================================================== */
 
-/* Bento Grid Theme Overrides to transform light utility classes cleanly */
-.min-h-screen {
-  background-color: #09090b !important;
-}
-
-.bg-white, .bg-white\/90 {
-  background-color: #18181b !important; /* zinc-900 */
-}
-
-/* Support translucency for backdrop filter */
-nav.bg-white\/90 {
-  background-color: rgba(24, 24, 27, 0.8) !important;
-  backdrop-filter: blur(12px);
-}
-
-.bg-gray-50, .bg-gray-100, .bg-gray-50\/20, .bg-gray-100\/10 {
-  background-color: #09090b !important; /* zinc-950 */
-}
-
-.border-gray-50, .border-gray-100, .border-gray-200, .border-white\/10 {
-  border-color: #27272a !important; /* zinc-800 */
-}
-
-.text-gray-900, .text-gray-950, .text-gray-800 {
-  color: #f4f4f5 !important; /* zinc-100 */
-}
-
-.text-gray-700, .text-gray-600 {
-  color: #d4d4d8 !important; /* zinc-300 */
-}
-
-.text-gray-500, .text-gray-400 {
-  color: #a1a1aa !important; /* zinc-400 */
-}
-
-/* Input & Select Box styling */
-input, select, textarea {
-  background-color: #09090b !important;
-  border-color: #27272a !important;
-  color: #f4f4f5 !important;
-}
-
-input:focus, select:focus, textarea:focus {
-  border-color: #f59e0b !important; /* amber-500 */
-  outline: none;
-}
-
-/* Custom Bento Box shadow and transition glows */
-.group:hover .group-hover\:scale-105 {
-  transform: scale(1.05);
-}
-
-/* Buttons style mappings */
+/* Primary actions use the brand amber accent rather than grey.
+   The label is pinned to a dark ink so `text-white` on these
+   buttons stays legible against the amber fill in light mode. */
 .bg-gray-900 {
   background-color: #f59e0b !important; /* amber-500 */
-  color: #09090b !important; /* dark text on amber buttons */
+  color: #09090b !important;
   font-weight: 700 !important;
 }
 
@@ -93,37 +77,359 @@ input:focus, select:focus, textarea:focus {
   background-color: #fbbf24 !important; /* amber-400 */
 }
 
-.text-white {
+.hover\:bg-gray-800:hover {
+  background-color: #fbbf24 !important; /* amber-400 */
+}
+
+/* Unify corner radius across card surfaces */
+.card-custom,
+.rounded-2xl,
+.rounded-3xl {
+  border-radius: 1.5rem !important;
+}
+
+/* Restore the intended group-hover scale behaviour */
+.group:hover .group-hover\:scale-105 {
+  transform: scale(1.05);
+}
+
+/* ==========================================================
+   Dark theme — applied when <html> carries the `dark` class.
+   Light mode is the native Tailwind palette the components
+   were authored against; everything below is the dark variant.
+   ========================================================== */
+
+.dark {
+  color-scheme: dark;
+}
+
+.dark body {
+  background-color: #09090b !important; /* zinc-950 */
+  color: #f4f4f5 !important; /* zinc-100 */
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #09090b;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #27272a;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+}
+
+/* --- Page & surfaces --- */
+.dark .min-h-screen {
+  background-color: #09090b !important;
+}
+
+/* App root wrapper uses an arbitrary light-grey fill */
+.dark .bg-\[\#fafafa\] {
+  background-color: #09090b !important;
+}
+
+.dark .bg-white {
+  background-color: #18181b !important; /* zinc-900 */
+}
+
+.dark .bg-white\/80 {
+  background-color: rgba(24, 24, 27, 0.85) !important;
+}
+
+.dark nav.bg-white\/90 {
+  background-color: rgba(24, 24, 27, 0.8) !important;
+  backdrop-filter: blur(12px);
+}
+
+.dark .bg-gray-50,
+.dark .bg-gray-50\/20 {
+  background-color: #09090b !important; /* zinc-950 */
+}
+
+.dark .bg-gray-50\/50 {
+  background-color: #18181b !important; /* zinc-900 */
+}
+
+.dark .bg-gray-100 {
+  background-color: #09090b !important; /* zinc-950 */
+}
+
+.dark .bg-gray-200 {
+  background-color: #27272a !important; /* zinc-800 */
+}
+
+.dark .bg-gray-300 {
+  background-color: #3f3f46 !important; /* zinc-700 */
+}
+
+.dark .bg-gray-900\/40 {
+  background-color: rgba(0, 0, 0, 0.6) !important;
+}
+
+/* --- Text ---
+   `.dark .text-white` also covers the amber primary buttons,
+   matching the original dark theme's light label on amber. */
+.dark .text-white {
   color: #f4f4f5 !important;
 }
 
-/* Make badges look like premium bento indicators */
-.bg-amber-50 {
+.dark .text-gray-950,
+.dark .text-gray-900,
+.dark .text-gray-800 {
+  color: #f4f4f5 !important; /* zinc-100 */
+}
+
+.dark .text-gray-700,
+.dark .text-gray-600 {
+  color: #d4d4d8 !important; /* zinc-300 */
+}
+
+.dark .text-gray-500,
+.dark .text-gray-400 {
+  color: #a1a1aa !important; /* zinc-400 */
+}
+
+/* --- Borders --- */
+.dark .border-gray-50,
+.dark .border-gray-100,
+.dark .border-gray-200 {
+  border-color: #27272a !important; /* zinc-800 */
+}
+
+.dark .border-gray-300 {
+  border-color: #3f3f46 !important; /* zinc-700 */
+}
+
+.dark .divide-gray-50 {
+  border-color: #27272a !important;
+}
+
+/* --- Form controls ---
+   The :not() guards raise specificity above the surface rules
+   above, so inputs keep the recessed field colour in dark mode. */
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: #09090b !important;
+  border-color: #27272a !important;
+  color: #f4f4f5 !important;
+}
+
+.dark option {
+  background-color: #09090b !important;
+  color: #f4f4f5 !important;
+}
+
+.dark input:focus,
+.dark select:focus,
+.dark textarea:focus {
+  border-color: #f59e0b !important;
+  outline: none;
+}
+
+.dark .placeholder-gray-500::placeholder {
+  color: #71717a !important; /* zinc-500 */
+}
+
+.dark .accent-gray-900 {
+  accent-color: #f59e0b !important;
+}
+
+/* --- Text selection --- */
+.dark .selection\:bg-gray-950::selection {
+  background-color: #f59e0b !important;
+}
+
+.dark .selection\:text-white::selection {
+  color: #09090b !important;
+}
+
+/* --- Focus & selection rings --- */
+.dark .focus\:ring-gray-900:focus,
+.dark .focus\:ring-amber-200:focus {
+  --tw-ring-color: #f59e0b !important;
+}
+
+.dark .ring-white {
+  --tw-ring-color: #18181b !important;
+}
+
+.dark .ring-gray-50 {
+  --tw-ring-color: #27272a !important;
+}
+
+.dark .ring-emerald-50 {
+  --tw-ring-color: rgba(16, 185, 129, 0.15) !important;
+}
+
+.dark .ring-red-100 {
+  --tw-ring-color: rgba(239, 68, 68, 0.2) !important;
+}
+
+/* --- Hover states --- */
+.dark .hover\:bg-gray-50:hover,
+.dark .hover\:bg-gray-50\/50:hover {
+  background-color: #18181b !important;
+}
+
+.dark .hover\:bg-gray-100:hover {
+  background-color: #27272a !important;
+}
+
+.dark .hover\:bg-gray-200:hover {
+  background-color: #3f3f46 !important;
+}
+
+.dark .hover\:border-gray-200:hover {
+  border-color: #27272a !important;
+}
+
+.dark .hover\:text-gray-900:hover,
+.dark .hover\:text-gray-950:hover,
+.dark .hover\:text-white:hover {
+  color: #f4f4f5 !important;
+}
+
+.dark .hover\:text-red-500:hover,
+.dark .hover\:text-red-600:hover {
+  color: #f87171 !important;
+}
+
+.dark .hover\:text-amber-600:hover {
+  color: #fbbf24 !important;
+}
+
+/* --- Amber accents --- */
+.dark .bg-amber-50,
+.dark .bg-amber-50\/20,
+.dark .bg-amber-50\/50 {
   background-color: rgba(245, 158, 11, 0.1) !important;
-  color: #f59e0b !important;
+}
+
+.dark .bg-amber-500\/10 {
+  background-color: rgba(245, 158, 11, 0.1) !important;
+}
+
+.dark .bg-amber-500\/5 {
+  background-color: rgba(245, 158, 11, 0.05) !important;
+}
+
+.dark .border-amber-50\/50,
+.dark .border-amber-100,
+.dark .border-amber-100\/35,
+.dark .border-amber-100\/50,
+.dark .border-amber-200,
+.dark .border-amber-200\/50,
+.dark .border-amber-500\/10 {
   border-color: rgba(245, 158, 11, 0.2) !important;
 }
 
-.bg-teal-50 {
-  background-color: rgba(20, 184, 166, 0.1) !important;
-  color: #14b8a6 !important;
-  border-color: rgba(20, 184, 166, 0.2) !important;
+.dark .text-amber-600,
+.dark .text-amber-700 {
+  color: #fbbf24 !important;
 }
 
-.bg-red-50 {
+.dark .text-amber-800,
+.dark .text-amber-900 {
+  color: #fcd34d !important;
+}
+
+/* --- Red accents --- */
+.dark .bg-red-50,
+.dark .bg-red-50\/10,
+.dark .bg-red-50\/50 {
   background-color: rgba(239, 68, 68, 0.1) !important;
-  color: #ef4444 !important;
+}
+
+.dark .border-red-50\/50,
+.dark .border-red-100,
+.dark .border-red-200 {
   border-color: rgba(239, 68, 68, 0.2) !important;
 }
 
-/* Bento card styling */
-.card-custom, .rounded-2xl, .rounded-3xl {
-  border-radius: 1.5rem !important; /* unified rounded corners */
+.dark .text-red-500,
+.dark .text-red-600,
+.dark .text-red-700 {
+  color: #f87171 !important;
 }
 
-/* Specific details */
+/* --- Emerald accents --- */
+.dark .bg-emerald-50,
+.dark .bg-emerald-50\/10,
+.dark .bg-emerald-50\/20,
+.dark .bg-emerald-50\/50 {
+  background-color: rgba(16, 185, 129, 0.1) !important;
+}
+
+.dark .bg-emerald-100 {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+}
+
+.dark .border-emerald-100,
+.dark .border-emerald-100\/50,
+.dark .border-emerald-100\/55,
+.dark .border-emerald-200\/50,
+.dark .border-emerald-500\/30 {
+  border-color: rgba(16, 185, 129, 0.2) !important;
+}
+
+.dark .text-emerald-600,
+.dark .text-emerald-700 {
+  color: #34d399 !important;
+}
+
+.dark .text-emerald-800 {
+  color: #6ee7b7 !important;
+}
+
+/* --- Teal accents --- */
+.dark .bg-teal-50,
+.dark .bg-teal-500\/5 {
+  background-color: rgba(20, 184, 166, 0.1) !important;
+}
+
+.dark .border-teal-100,
+.dark .border-teal-100\/50,
+.dark .border-teal-200 {
+  border-color: rgba(20, 184, 166, 0.2) !important;
+}
+
+.dark .text-teal-700 {
+  color: #2dd4bf !important;
+}
+
+.dark .text-teal-800 {
+  color: #5eead4 !important;
+}
+
+/* --- Sky & green accents --- */
+.dark .bg-sky-50 {
+  background-color: rgba(14, 165, 233, 0.1) !important;
+}
+
+.dark .bg-sky-100\/30 {
+  background-color: rgba(14, 165, 233, 0.12) !important;
+}
+
+.dark .border-sky-100\/50 {
+  border-color: rgba(14, 165, 233, 0.2) !important;
+}
+
+.dark .text-sky-800 {
+  color: #7dd3fc !important;
+}
+
+.dark .bg-green-50 {
+  background-color: rgba(34, 197, 94, 0.1) !important;
+}
+
+.dark .text-green-600 {
+  color: #4ade80 !important;
+}
+
+/* --- Nav logo badge ---
+   Sits on the brand amber, so it keeps the dark ink label. */
 #nav-logo .bg-gray-900 {
   background-color: #f59e0b !important;
   color: #09090b !important;
 }
-
