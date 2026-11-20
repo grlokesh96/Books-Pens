@@ -9,6 +9,7 @@ import AdminDashboard from './components/AdminDashboard';
 import ContactAbout from './components/ContactAbout';
 import { Product, Book, Pen, CartItem, WishlistItem, User, Order, Coupon, Review, CATEGORIES, BRANDS, INK_COLORS } from './types';
 import { INITIAL_BOOKS, INITIAL_PENS, INITIAL_COUPONS } from './data/initialData';
+import { useTheme } from './hooks/useTheme';
 
 // Setup some mock initial orders so order history looks fully loaded
 const INITIAL_ORDERS: Order[] = [
@@ -78,6 +79,8 @@ const INITIAL_USER: User = {
 };
 
 export default function App() {
+  const { theme, toggleTheme } = useTheme();
+
   // Global States (using LocalStorage for durable persistence in browser refreshes!)
   const [products, setProducts] = useState<Product[]>(() => {
     const saved = localStorage.getItem('ink_paper_products');
@@ -452,6 +455,8 @@ export default function App() {
         wishlist={wishlist}
         onOpenCart={() => setShowCartDrawer(true)}
         onLogout={handleLogout}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       {/* Main Container Wrapper */}
